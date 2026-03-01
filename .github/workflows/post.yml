@@ -9,7 +9,7 @@ on:
 jobs:
   generate-and-publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 15  # fail entire job if it runs longer (e.g. FAL down)
+    timeout-minutes: 15  # sync FAL ~1–2 min + 5 min wait + publish
     steps:
       - uses: actions/checkout@v3
       
