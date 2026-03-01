@@ -28,5 +28,5 @@ jobs:
       env:
         FAL_API_KEY: ${{ secrets.FAL_API_KEY }}
         LORA_MODEL_URL: ${{ secrets.LORA_MODEL_URL }}
-        COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+        COMPOSIO_TOKEN: ${{ secrets.COMPOSIO_TOKEN }}
       run: python post.py
