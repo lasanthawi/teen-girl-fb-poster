@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 import os
 import sys
+import json
 import random
+import requests
 import fal_client
 from datetime import datetime
 
@@ -10,23 +12,23 @@ def log(msg):
 
 def main():
     log("="*60)
-    log("FAL Image Generator - Teen Girl Lora")
+    log("Automated Teen Girl FB Poster")
     log("="*60)
     log("")
     
-    # Get credentials
+    # Get all credentials
     fal_key = os.environ.get("FAL_API_KEY", "").strip()
     lora_url = os.environ.get("LORA_MODEL_URL", "").strip()
+    composio_token = os.environ.get("COMPOSIO_TOKEN", "").strip()
     
-    if not fal_key or not lora_url:
-        log("✗ Missing FAL_API_KEY or LORA_MODEL_URL")
+    if not all([fal_key, lora_url, composio_token]):
+        log("✗ Missing required secrets")
         sys.exit(1)
     
-    log(f"✓ FAL_API_KEY: {fal_key[:20]}...")
-    log(f"✓ LORA_MODEL_URL: {lora_url[:50]}...")
+    log(f"✓ All secrets present")
     log("")
     
-    # Teen girl portrait prompts optimized for Lora
+    # Teen girl prompts for Lora
     prompts = [
         "young woman selfie in bedroom, casual outfit, soft natural light, photorealistic",
         "teen girl studying at desk, books and laptop, focused expression, natural lighting",
@@ -39,29 +41,22 @@ def main():
     ]
     
     prompt = random.choice(prompts)
-    log(f"Selected prompt: {prompt}")
+    log(f"Prompt: {prompt}")
     log("")
     
-    log("Generating image with FAL AI + Lora...")
-    log(f"  Model: fal-ai/flux-lora")
-    log(f"  Lora scale: 1.8 (MAXIMUM)")
-    log(f"  Size: square (512x512)")
-    log(f"  Steps: 35")
-    log("")
+    # STEP 1: Generate image with FAL
+    log("="*60)
+    log("STEP 1: Generate Image (Lora 1.8, Square, 35 steps)")
+    log("="*60)
     
     try:
-        # Configure FAL client
         os.environ["FAL_KEY"] = fal_key
         
-        # Generate with strong Lora
         result = fal_client.subscribe(
             "fal-ai/flux-lora",
             arguments={
                 "prompt": prompt,
-                "loras": [{
-                    "path": lora_url,
-                    "scale": 1.8  # MAXIMUM strength
-                }],
+                "loras": [{"path": lora_url, "scale": 1.8}],
                 "image_size": "square",
                 "num_inference_steps": 35,
                 "guidance_scale": 2.5,
@@ -71,21 +66,61 @@ def main():
         )
         
         image_url = result["images"][0]["url"]
-        dimensions = result["images"][0]
-        
-        log("="*60)
-        log("✓ SUCCESS! IMAGE GENERATED")
-        log("="*60)
-        log(f"Image URL: {image_url}")
-        log(f"Size: {dimensions.get('width', 512)}x{dimensions.get('height', 512)}")
-        log(f"Lora scale: 1.8 (VERY STRONG)")
+        log(f"✓ Image generated: {image_url}")
+        log(f"  Size: 512x512 square")
         log("")
-        log("COPY THIS IMAGE URL TO USE IN YOUR COMPOSIO RECIPE:")
-        log(image_url)
+        
+    except Exception as e:
+        log(f"✗ Image generation failed: {e}")
+        sys.exit(1)
+    
+    # STEP 2: Call Composio recipe
+    log("="*60)
+    log("STEP 2: Publish via Composio Recipe")
+    log("="*60)
+    
+    headers = {
+        "Authorization": f"Bearer {composio_token}",
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "facebook_page_id": "1025914070602506",
+        "image_url": image_url
+    }
+    
+    try:
+        response = requests.post(
+            "https://backend.composio.dev/api/v1/actions/rcp_A9M-wR3IZxUp/execute",
+            headers=headers,
+            json=payload,
+            timeout=180
+        )
+        
+        if response.status_code == 200:
+            result = response.json()
+            log(f"✓ Recipe executed!")
+            
+            if "data" in result:
+                data = result.get("data", {})
+                log(f"  Post ID: {data.get('post_id', 'N/A')}")
+                log(f"  Link: {data.get('permalink', 'N/A')}")
+                log(f"  Caption: {data.get('caption', 'N/A')[:60]}...")
+        else:
+            log(f"✗ Recipe API returned {response.status_code}")
+            log(f"  Response: {response.text[:200]}")
+            raise Exception(f"Recipe failed: {response.status_code}")
+        
+        log("")
+        log("="*60)
+        log("✓ SUCCESS! Post published to Nethmi G")
         log("="*60)
         
     except Exception as e:
-        log(f"✗ Error: {str(e)}")
+        log(f"✗ Recipe execution failed: {e}")
+        log("")
+        log("Image was generated successfully!")
+        log(f"You can manually post it using: {image_url}")
         sys.exit(1)
 
 if __name__ == "__main__":
