@@ -30,7 +30,7 @@ def generate_image_fal(prompt):
         "loras": [{"path": LORA_MODEL_URL, "scale": 1.8}]
     }
     
-    # Submit
+    # Submit to queue
     resp = requests.post("https://queue.fal.run/fal-ai/flux-lora", headers=headers, json=payload, timeout=30)
     if resp.status_code != 200:
         log(f"Submit error: {resp.status_code} - {resp.text}")
@@ -40,18 +40,36 @@ def generate_image_fal(prompt):
     request_id = data.get("request_id")
     log(f"Request ID: {request_id}")
     
-    # Poll for result
+    # Poll for result using queue endpoint
     for i in range(60):
         time.sleep(3)
         try:
-            status_resp = requests.get(f"https://fal.run/fal-ai/flux-lora/requests/{request_id}", headers=headers, timeout=10)
+            # Use queue.fal.run for status check
+            status_resp = requests.get(
+                f"https://queue.fal.run/fal-ai/flux-lora/requests/{request_id}/status",
+                headers=headers,
+                timeout=15
+            )
+            
             if status_resp.status_code == 200:
                 result = status_resp.json()
-                if result.get("status") == "COMPLETED":
-                    images = result.get("data", {}).get("images", [])
-                    if images:
-                        return images[0].get("url")
-            log(f"Status: {status_resp.status_code}")
+                state = result.get("status")
+                log(f"Status: {state}")
+                
+                if state == "COMPLETED":
+                    response_url = result.get("response_url")
+                    if response_url:
+                        final_resp = requests.get(response_url, headers=headers, timeout=15)
+                        final_data = final_resp.json()
+                        images = final_data.get("images", [])
+                        if images:
+                            return images[0].get("url")
+                    raise Exception("No images in completed result")
+                elif state in ["FAILED", "CANCELLED"]:
+                    error = result.get("error", "Unknown")
+                    raise Exception(f"Generation failed: {error}")
+            else:
+                log(f"Poll returned: {status_resp.status_code}")
         except Exception as e:
             log(f"Poll error: {e}")
     
@@ -63,7 +81,7 @@ def call_recipe(image_url):
         f"https://backend.composio.dev/api/v1/rube/recipes/{RECIPE_ID}/trigger",
         headers={"Authorization": f"Bearer {COMPOSIO_TOKEN}", "Content-Type": "application/json"},
         json={"input": {"image_url": image_url}},
-        timeout=30
+        timeout=60
     )
     log(f"Recipe response: {resp.status_code}")
     if resp.status_code not in [200, 201]:
