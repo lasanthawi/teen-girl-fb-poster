@@ -51,13 +51,13 @@ def generate_image_fal(prompt, lora_url):
         "loras": [
             {
                 "path": lora_url,
-                "scale": 1.2  # Increased from 1.0 for stronger Lora effect
+                "scale": 1.2  # Increased for stronger Lora effect
             }
         ],
-        "image_size": "square",  # Changed to square
+        "image_size": "square",
         "num_images": 1,
-        "num_inference_steps": 28,  # More steps for better quality
-        "guidance_scale": 3.5,  # Better prompt adherence
+        "num_inference_steps": 28,
+        "guidance_scale": 3.5,
         "enable_safety_checker": False
     }
     
@@ -87,52 +87,38 @@ def generate_image_fal(prompt, lora_url):
         raise
 
 def trigger_composio_recipe(image_url):
-    """Trigger Composio recipe to publish post using correct Rube endpoint"""
+    """Trigger Composio recipe using SDK"""
     log("\nTriggering Composio recipe...")
     log(f"Recipe ID: {RECIPE_ID}")
     log(f"Image URL: {image_url[:60]}...")
     
-    headers = {
-        "Authorization": f"Bearer {COMPOSIO_TOKEN}",
-        "Content-Type": "application/json"
-    }
-    
-    # Correct payload format for Rube API
-    payload = {
-        "recipeId": RECIPE_ID,  # Use recipeId not recipe_id
-        "params": {  # Use params not input_data
-            "facebook_page_id": FACEBOOK_PAGE_ID,
-            "image_url": image_url
-        }
-    }
-    
     try:
-        # Correct Rube recipe execution endpoint
-        response = requests.post(
-            "https://backend.composio.dev/api/v2/rube/recipe/execute",
-            headers=headers,
-            json=payload,
-            timeout=180
+        from composio_rube import Rube
+        
+        # Initialize Rube client
+        rube = Rube(api_key=COMPOSIO_TOKEN)
+        
+        # Execute recipe
+        result = rube.execute_recipe(
+            recipe_id=RECIPE_ID,
+            params={
+                "facebook_page_id": FACEBOOK_PAGE_ID,
+                "image_url": image_url
+            }
         )
-        response.raise_for_status()
-        result = response.json()
         
         log(f"✓ Recipe executed successfully!")
         
         # Extract result data
-        if "data" in result:
-            recipe_data = result.get("data", {})
-            if isinstance(recipe_data, dict):
-                log(f"  Post ID: {recipe_data.get('post_id', 'N/A')}")
-                log(f"  Permalink: {recipe_data.get('permalink', 'N/A')}")
-                caption = recipe_data.get('caption', 'N/A')
-                log(f"  Caption: {caption[:80]}..." if len(caption) > 80 else f"  Caption: {caption}")
+        if isinstance(result, dict):
+            log(f"  Post ID: {result.get('post_id', 'N/A')}")
+            log(f"  Permalink: {result.get('permalink', 'N/A')}")
+            caption = result.get('caption', 'N/A')
+            log(f"  Caption: {caption[:80]}..." if len(caption) > 80 else f"  Caption: {caption}")
         
         return result
-    except requests.exceptions.HTTPError as e:
-        log(f"✗ HTTP Error triggering recipe: {e}")
-        log(f"  Status Code: {e.response.status_code}")
-        log(f"  Response: {e.response.text}")
+    except ImportError:
+        log("✗ composio-rube SDK not installed. Install with: pip install composio-rube")
         raise
     except Exception as e:
         log(f"✗ Error triggering recipe: {e}")
@@ -191,6 +177,8 @@ def main():
         log("✗ FAILED")
         log("="*60)
         log(f"Error: {e}")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
 
 if __name__ == "__main__":
