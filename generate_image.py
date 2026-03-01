@@ -42,9 +42,9 @@ resp = requests.post(
 request_id = resp.json()["request_id"]
 log(f"Request ID: {request_id}")
 
-# Poll
-for _ in range(60):
-    time.sleep(3)
+# Poll (allow up to ~10 min: 120 * 5s) — FAL queue can take 4–6+ min under load
+for _ in range(120):
+    time.sleep(5)
     status = requests.get(
         f"https://queue.fal.run/fal-ai/flux-lora/requests/{request_id}",
         headers={"Authorization": f"Key {fal_key}"}
@@ -55,12 +55,15 @@ for _ in range(60):
             image_url = result["images"][0]["url"]
             log(f"✓ Image: {image_url}")
             
-            # Save to file for next step
+            # Save to file for next step (publish.py)
             with open("image_url.txt", "w") as f:
                 f.write(image_url)
             
-            # Output for GitHub Actions
-            print(f"::set-output name=image_url::{image_url}")
+            # Output for GitHub Actions (GITHUB_OUTPUT)
+            gh_out = os.environ.get("GITHUB_OUTPUT")
+            if gh_out:
+                with open(gh_out, "a") as f:
+                    f.write(f"image_url={image_url}\n")
             sys.exit(0)
 
 log("✗ Timeout")
