@@ -12,7 +12,7 @@ from datetime import datetime
 # Configuration
 FAL_API_KEY = os.getenv("FAL_API_KEY", "").strip()
 LORA_MODEL_URL = os.getenv("LORA_MODEL_URL")
-COMPOSIO_API_KEY = os.getenv("COMPOSIO_API_KEY", "").strip()
+COMPOSIO_TOKEN = os.getenv("COMPOSIO_TOKEN", "").strip()  # JWT token from Rube
 RECIPE_ID = "rcp_A9M-wR3IZxUp"
 FACEBOOK_PAGE_ID = "1025914070602506"
 
@@ -33,7 +33,9 @@ def generate_image_prompt():
 
 def generate_image_fal(prompt, lora_url):
     """Generate image using FAL AI with Lora model"""
-    log(f"Generating image: {prompt[:60]}...")
+    log(f"Generating image with FAL AI...")
+    log(f"Prompt: {prompt[:80]}...")
+    log(f"Lora URL: {lora_url[:60]}...")
     
     headers = {
         "Authorization": f"Key {FAL_API_KEY}",
@@ -61,7 +63,8 @@ def generate_image_fal(prompt, lora_url):
         images = result.get("images", [])
         if images:
             image_url = images[0].get("url")
-            log(f"✓ Image generated: {image_url}")
+            log(f"✓ Image generated successfully!")
+            log(f"  Image URL: {image_url}")
             return image_url
         else:
             raise Exception(f"No images in response: {result}")
@@ -71,10 +74,12 @@ def generate_image_fal(prompt, lora_url):
 
 def trigger_composio_recipe(image_url):
     """Trigger Composio recipe to publish post"""
-    log("Triggering Composio recipe to publish...")
+    log("\nTriggering Composio recipe...")
+    log(f"Recipe ID: {RECIPE_ID}")
+    log(f"Image URL: {image_url[:60]}...")
     
     headers = {
-        "X-API-Key": COMPOSIO_API_KEY,
+        "Authorization": f"Bearer {COMPOSIO_TOKEN}",  # Use Bearer token
         "Content-Type": "application/json"
     }
     
@@ -95,16 +100,23 @@ def trigger_composio_recipe(image_url):
         )
         response.raise_for_status()
         result = response.json()
-        log(f"✓ Recipe executed: {json.dumps(result, indent=2)}")
+        
+        log(f"✓ Recipe executed successfully!")
+        log(f"  Response: {json.dumps(result, indent=2)}")
         return result
+    except requests.exceptions.HTTPError as e:
+        log(f"✗ HTTP Error triggering recipe: {e}")
+        log(f"  Status Code: {e.response.status_code}")
+        log(f"  Response: {e.response.text}")
+        raise
     except Exception as e:
         log(f"✗ Error triggering recipe: {e}")
-        if hasattr(e, 'response') and e.response:
-            log(f"Response: {e.response.text}")
         raise
 
 def main():
-    log("=== Teen Girl FB Auto-Poster (Hybrid Mode) ===")
+    log("="*60)
+    log("Teen Girl FB Auto-Poster (Hybrid Mode)")
+    log("="*60)
     
     # Validate required vars
     if not FAL_API_KEY:
@@ -113,27 +125,45 @@ def main():
     if not LORA_MODEL_URL:
         log("ERROR: LORA_MODEL_URL is required")
         sys.exit(1)
-    if not COMPOSIO_API_KEY:
-        log("ERROR: COMPOSIO_API_KEY is required")
+    if not COMPOSIO_TOKEN:
+        log("ERROR: COMPOSIO_TOKEN is required")
         sys.exit(1)
+    
+    log(f"\n✓ All environment variables present")
+    log(f"  FAL_API_KEY: {FAL_API_KEY[:20]}...")
+    log(f"  LORA_MODEL_URL: {LORA_MODEL_URL[:50]}...")
+    log(f"  COMPOSIO_TOKEN: {COMPOSIO_TOKEN[:30]}...")
     
     try:
         # Step 1: Generate image with FAL
+        log("\n" + "="*60)
+        log("STEP 1: Generate Image with FAL AI + Lora")
+        log("="*60)
         prompt = generate_image_prompt()
         image_url = generate_image_fal(prompt, LORA_MODEL_URL)
         
         # Step 2: Trigger Composio recipe
+        log("\n" + "="*60)
+        log("STEP 2: Publish to Facebook via Composio Recipe")
+        log("="*60)
         result = trigger_composio_recipe(image_url)
         
-        log("\n=== SUCCESS! Post published ===")
-        print(json.dumps({
+        log("\n" + "="*60)
+        log("✓ SUCCESS! Post published to Facebook")
+        log("="*60)
+        
+        # Print final summary
+        summary = {
             "success": True,
             "image_url": image_url,
             "recipe_result": result
-        }, indent=2))
+        }
+        print("\n" + json.dumps(summary, indent=2))
         
     except Exception as e:
-        log(f"\n=== FAILED ===")
+        log("\n" + "="*60)
+        log("✗ FAILED")
+        log("="*60)
         log(f"Error: {e}")
         sys.exit(1)
 
