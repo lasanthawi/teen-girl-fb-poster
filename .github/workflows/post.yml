@@ -24,12 +24,9 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     
-    - name: Run auto-poster
+    - name: Generate image and publish via Composio
       env:
-        FACEBOOK_PAGE_ID: ${{ secrets.FACEBOOK_PAGE_ID }}
-        FACEBOOK_ACCESS_TOKEN: ${{ secrets.FACEBOOK_ACCESS_TOKEN }}
         FAL_API_KEY: ${{ secrets.FAL_API_KEY }}
         LORA_MODEL_URL: ${{ secrets.LORA_MODEL_URL }}
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        POSTS_TO_GENERATE: ${{ secrets.POSTS_TO_GENERATE || '1' }}
+        COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
       run: python post.py
