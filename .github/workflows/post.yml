@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  post:
+  generate-and-publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -22,10 +22,19 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
       
-      - name: Generate and publish
+      - name: Generate image with FAL
+        id: generate
         env:
           FAL_API_KEY: ${{ secrets.FAL_API_KEY }}
           LORA_MODEL_URL: ${{ secrets.LORA_MODEL_URL }}
-          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
-          WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
-        run: python post.py
+        run: python generate_image.py
+      
+      - name: Wait 5 minutes
+        run: |
+          echo "Waiting 5 minutes before publishing..."
+          sleep 300
+      
+      - name: Publish to Facebook
+        env:
+          COMPOSIO_TOKEN: ${{ secrets.COMPOSIO_TOKEN }}
+        run: python publish.py
