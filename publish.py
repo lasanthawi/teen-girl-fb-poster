@@ -2,7 +2,6 @@ import os
 import sys
 import requests
 from datetime import datetime
-from composio import Composio
 
 def log(msg):
     print(f"[{datetime.utcnow().isoformat()}] {msg}")
@@ -14,16 +13,28 @@ with open("image_url.txt", "r") as f:
 log(f"Publishing image: {image_url}")
 
 token = os.environ.get("COMPOSIO_TOKEN").strip()
-client = Composio(api_key=token)
+recipe_id = "rcp_A9M-wR3IZxUp"
+facebook_page_id = "1025914070602506"
 
+# Composio Rube recipe API (same as api/webhook.js) — SDK has no rube.execute_recipe
 log("Calling recipe...")
-result = client.rube.execute_recipe(
-    recipe_id="rcp_A9M-wR3IZxUp",
-    params={
-        "facebook_page_id": "1025914070602506",
-        "image_url": image_url
-    }
+resp = requests.post(
+    f"https://backend.composio.dev/api/v1/rube/recipes/{recipe_id}/execute",
+    headers={
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    },
+    json={
+        "facebook_page_id": facebook_page_id,
+        "image_url": image_url,
+    },
+    timeout=60,
 )
 
+if resp.status_code not in (200, 201):
+    log(f"✗ Recipe failed: {resp.status_code} {resp.text[:500]}")
+    sys.exit(1)
+
+result = resp.json()
 log("✓ SUCCESS! Post published to Facebook")
 log(f"Result: {result}")
