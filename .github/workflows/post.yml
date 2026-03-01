@@ -2,8 +2,9 @@ name: Teen Girl Daily Log Auto-Poster
 
 on:
   schedule:
-    # Run once per day at 7:30 PM Sri Lanka Time (2:00 PM UTC)
-    - cron: '0 14 * * *'
+    # Run twice per day: 2:30 PM and 7:30 PM Sri Lanka Time
+    - cron: '0 9 * * *'   # 2:30 PM SL (9:00 AM UTC)
+    - cron: '0 14 * * *'  # 7:30 PM SL (2:00 PM UTC)
   workflow_dispatch:  # Allow manual trigger
 
 jobs:
