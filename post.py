@@ -73,27 +73,25 @@ def generate_image_fal(prompt, lora_url):
         raise
 
 def trigger_composio_recipe(image_url):
-    """Trigger Composio recipe to publish post"""
+    """Trigger Composio recipe to publish post using v3 API"""
     log("\nTriggering Composio recipe...")
     log(f"Recipe ID: {RECIPE_ID}")
     log(f"Image URL: {image_url[:60]}...")
     
     headers = {
-        "Authorization": f"Bearer {COMPOSIO_TOKEN}",  # Use Bearer token
+        "Authorization": f"Bearer {COMPOSIO_TOKEN}",
         "Content-Type": "application/json"
     }
     
     payload = {
-        "recipeId": RECIPE_ID,
-        "params": {
-            "facebook_page_id": FACEBOOK_PAGE_ID,
-            "image_url": image_url
-        }
+        "facebook_page_id": FACEBOOK_PAGE_ID,
+        "image_url": image_url
     }
     
+    # Try v3 API endpoint
     try:
         response = requests.post(
-            "https://backend.composio.dev/api/v1/rube/recipe/run",
+            f"https://backend.composio.dev/api/v3/recipes/{RECIPE_ID}/execute",
             headers=headers,
             json=payload,
             timeout=180
