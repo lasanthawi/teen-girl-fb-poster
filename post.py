@@ -73,7 +73,7 @@ def generate_image_fal(prompt, lora_url):
         raise
 
 def trigger_composio_recipe(image_url):
-    """Trigger Composio recipe to publish post using v3 API"""
+    """Trigger Composio recipe to publish post using Rube API"""
     log("\nTriggering Composio recipe...")
     log(f"Recipe ID: {RECIPE_ID}")
     log(f"Image URL: {image_url[:60]}...")
@@ -84,14 +84,17 @@ def trigger_composio_recipe(image_url):
     }
     
     payload = {
-        "facebook_page_id": FACEBOOK_PAGE_ID,
-        "image_url": image_url
+        "recipe_id": RECIPE_ID,
+        "input_data": {
+            "facebook_page_id": FACEBOOK_PAGE_ID,
+            "image_url": image_url
+        }
     }
     
-    # Try v3 API endpoint
     try:
+        # Correct Rube API endpoint
         response = requests.post(
-            f"https://backend.composio.dev/api/v3/recipes/{RECIPE_ID}/execute",
+            "https://backend.composio.dev/api/v1/rube/recipe/execute",
             headers=headers,
             json=payload,
             timeout=180
@@ -100,7 +103,15 @@ def trigger_composio_recipe(image_url):
         result = response.json()
         
         log(f"✓ Recipe executed successfully!")
-        log(f"  Response: {json.dumps(result, indent=2)}")
+        
+        # Extract result data
+        if "data" in result:
+            recipe_data = result["data"]
+            if isinstance(recipe_data, dict):
+                log(f"  Post ID: {recipe_data.get('post_id', 'N/A')}")
+                log(f"  Permalink: {recipe_data.get('permalink', 'N/A')}")
+                log(f"  Caption: {recipe_data.get('caption', 'N/A')[:60]}...")
+        
         return result
     except requests.exceptions.HTTPError as e:
         log(f"✗ HTTP Error triggering recipe: {e}")
