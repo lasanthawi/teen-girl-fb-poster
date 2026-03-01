@@ -22,9 +22,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
       
-      - name: Generate image and publish
+      - name: Generate and publish
         env:
           FAL_API_KEY: ${{ secrets.FAL_API_KEY }}
           LORA_MODEL_URL: ${{ secrets.LORA_MODEL_URL }}
-          COMPOSIO_TOKEN: ${{ secrets.COMPOSIO_TOKEN }}
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+          WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
         run: python post.py
