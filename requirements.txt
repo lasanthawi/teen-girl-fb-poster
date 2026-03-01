@@ -1,1 +1,2 @@
 requests==2.31.0
+composio-rube==0.1.0
