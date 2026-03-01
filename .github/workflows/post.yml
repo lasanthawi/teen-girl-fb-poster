@@ -2,30 +2,28 @@ name: Teen Girl Daily Log Auto-Poster
 
 on:
   schedule:
-    # Run 3 times per day: 9 AM, 2 PM, 7 PM UTC
-    - cron: '0 9 * * *'   # 9 AM UTC
-    - cron: '0 14 * * *'  # 2 PM UTC
-    - cron: '0 19 * * *'  # 7 PM UTC
+    # Run once per day at 7:30 PM Sri Lanka Time (2:00 PM UTC)
+    - cron: '0 14 * * *'
   workflow_dispatch:  # Allow manual trigger
 
 jobs:
   post:
     runs-on: ubuntu-latest
-
+    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-
+    
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
-
+    
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-
+    
     - name: Run auto-poster
       env:
         FACEBOOK_PAGE_ID: ${{ secrets.FACEBOOK_PAGE_ID }}
