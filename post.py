@@ -87,7 +87,7 @@ def generate_image_fal(prompt, lora_url):
         raise
 
 def trigger_composio_recipe(image_url):
-    """Trigger Composio recipe to publish post"""
+    """Trigger Composio recipe to publish post using correct Rube endpoint"""
     log("\nTriggering Composio recipe...")
     log(f"Recipe ID: {RECIPE_ID}")
     log(f"Image URL: {image_url[:60]}...")
@@ -97,17 +97,19 @@ def trigger_composio_recipe(image_url):
         "Content-Type": "application/json"
     }
     
+    # Correct payload format for Rube API
     payload = {
-        "recipe_id": RECIPE_ID,
-        "input_data": {
+        "recipeId": RECIPE_ID,  # Use recipeId not recipe_id
+        "params": {  # Use params not input_data
             "facebook_page_id": FACEBOOK_PAGE_ID,
             "image_url": image_url
         }
     }
     
     try:
+        # Correct Rube recipe execution endpoint
         response = requests.post(
-            "https://backend.composio.dev/api/v1/rube/recipe/execute",
+            "https://backend.composio.dev/api/v2/rube/recipe/execute",
             headers=headers,
             json=payload,
             timeout=180
@@ -117,8 +119,9 @@ def trigger_composio_recipe(image_url):
         
         log(f"✓ Recipe executed successfully!")
         
+        # Extract result data
         if "data" in result:
-            recipe_data = result["data"]
+            recipe_data = result.get("data", {})
             if isinstance(recipe_data, dict):
                 log(f"  Post ID: {recipe_data.get('post_id', 'N/A')}")
                 log(f"  Permalink: {recipe_data.get('permalink', 'N/A')}")
