@@ -1,4 +1,4 @@
-name: Generate Teen Girl Image
+name: Teen Girl Daily Log Auto-Poster
 
 on:
   schedule:
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  generate:
+  post:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -22,8 +22,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
       
-      - name: Generate image with FAL
+      - name: Generate image and publish
         env:
           FAL_API_KEY: ${{ secrets.FAL_API_KEY }}
           LORA_MODEL_URL: ${{ secrets.LORA_MODEL_URL }}
+          COMPOSIO_TOKEN: ${{ secrets.COMPOSIO_TOKEN }}
         run: python post.py
