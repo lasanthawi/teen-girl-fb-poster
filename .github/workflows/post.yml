@@ -9,7 +9,7 @@ on:
 jobs:
   generate-and-publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 15  # sync FAL ~1–2 min + 5 min wait + publish
+    timeout-minutes: 10  # sync FAL ~1–2 min + publish
     steps:
       - uses: actions/checkout@v3
       
@@ -30,12 +30,7 @@ jobs:
           LORA_MODEL_URL: ${{ secrets.LORA_MODEL_URL }}
         run: python generate_image.py
       
-      - name: Wait 5 minutes
-        run: |
-          echo "Waiting 5 minutes before publishing..."
-          sleep 300
-      
-      - name: Publish to Facebook
+      - name: Publish to Facebook via Composio
         env:
           COMPOSIO_TOKEN: ${{ secrets.COMPOSIO_TOKEN }}
         run: python publish.py

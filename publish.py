@@ -16,12 +16,12 @@ token = os.environ.get("COMPOSIO_TOKEN").strip()
 recipe_id = "rcp_A9M-wR3IZxUp"
 facebook_page_id = "1025914070602506"
 
-# Composio Rube recipe API (same as api/webhook.js) — SDK has no rube.execute_recipe
-log("Calling recipe...")
+# Composio v3 API (v1 endpoint returned 410 deprecated)
+log("Calling Composio recipe...")
 resp = requests.post(
-    f"https://backend.composio.dev/api/v1/rube/recipes/{recipe_id}/execute",
+    f"https://backend.composio.dev/api/v3/rube/recipes/{recipe_id}/execute",
     headers={
-        "Authorization": f"Bearer {token}",
+        "x-api-key": token,
         "Content-Type": "application/json",
     },
     json={
