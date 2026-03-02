@@ -16,19 +16,21 @@ token = os.environ.get("COMPOSIO_TOKEN").strip()
 recipe_id = "rcp_A9M-wR3IZxUp"
 facebook_page_id = "1025914070602506"
 
-# Composio v3 API (v1 endpoint returned 410 deprecated)
+# Composio Rube recipe API v3 (updated endpoint)
 log("Calling Composio recipe...")
 resp = requests.post(
-    f"https://backend.composio.dev/api/v3/rube/recipes/{recipe_id}/execute",
+    f"https://backend.composio.dev/api/v3/recipe/{recipe_id}/execute",
     headers={
-        "x-api-key": token,
+        "X-API-KEY": token,  # v3 uses X-API-KEY header
         "Content-Type": "application/json",
     },
     json={
-        "facebook_page_id": facebook_page_id,
-        "image_url": image_url,
+        "input_data": {  # v3 requires input_data wrapper
+            "facebook_page_id": facebook_page_id,
+            "image_url": image_url,
+        }
     },
-    timeout=60,
+    timeout=120,  # Increased timeout for recipe execution
 )
 
 if resp.status_code not in (200, 201):
@@ -37,4 +39,12 @@ if resp.status_code not in (200, 201):
 
 result = resp.json()
 log("✓ SUCCESS! Post published to Facebook")
-log(f"Result: {result}")
+
+# Extract relevant data from v3 response
+if "data" in result and "data" in result["data"]:
+    post_data = result["data"]["data"]
+    log(f"Post ID: {post_data.get('post_id', 'N/A')}")
+    log(f"Caption: {post_data.get('caption', 'N/A')[:100]}...")
+    log(f"Permalink: {post_data.get('permalink', 'N/A')}")
+else:
+    log(f"Result: {result}")
