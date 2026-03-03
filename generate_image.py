@@ -18,7 +18,7 @@ PROMPTS = [
     "girl standing full body outfit photo, mirror",
 ]
 
-log("Generating image with FAL (sync API, Lora 1.8, Square, 35 steps)...")
+log("Generating HIGH RESOLUTION image with FAL (sync API, Lora 1.8, Square HD 1024x1024, 35 steps)...")
 prompt = random.choice(PROMPTS)
 log(f"Prompt: {prompt}")
 
@@ -35,7 +35,7 @@ resp = requests.post(
     },
     json={
         "prompt": prompt,
-        "image_size": "square",
+        "image_size": "square_hd",  # 1024x1024 HD resolution (was "square" = 512x512)
         "num_inference_steps": 35,
         "guidance_scale": 2.5,
         "num_images": 1,
