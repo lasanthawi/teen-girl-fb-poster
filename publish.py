@@ -1,7 +1,7 @@
 import os
 import sys
-import requests
 from datetime import datetime
+from composio import ComposioToolSet, App
 
 def log(msg):
     print(f"[{datetime.utcnow().isoformat()}] {msg}")
@@ -12,54 +12,62 @@ with open("image_url.txt", "r") as f:
 
 log(f"Publishing image: {image_url}")
 
-token = os.environ.get("COMPOSIO_TOKEN").strip()
-recipe_id = "rcp_A9M-wR3IZxUp"
+api_key = os.environ.get("COMPOSIO_TOKEN").strip()
 facebook_page_id = "1025914070602506"
 
-# Composio Recipe API - External endpoint
-log("Calling Composio recipe via external API...")
-
-# Try the correct endpoint format
-url = f"https://backend.composio.dev/api/v3/recipe/{recipe_id}/execute"
-log(f"URL: {url}")
-
-headers = {
-    "X-API-KEY": token,
-    "Content-Type": "application/json",
-}
-
-payload = {
-    "input_data": {
-        "facebook_page_id": facebook_page_id,
-        "image_url": image_url,
-    }
-}
-
-log(f"Headers: X-API-KEY: {token[:20]}...")
-log(f"Payload: {payload}")
-
 try:
-    resp = requests.post(url, headers=headers, json=payload, timeout=120)
-    log(f"Status Code: {resp.status_code}")
-    log(f"Response Headers: {dict(resp.headers)}")
-    log(f"Response Text: {resp.text[:500]}")
+    # Initialize Composio
+    log("Initializing Composio...")
+    toolset = ComposioToolSet(api_key=api_key)
     
-    if resp.status_code not in (200, 201):
-        log(f"✗ Recipe failed: {resp.status_code} {resp.text[:500]}")
+    # Get Facebook tools
+    log("Getting Facebook tools...")
+    tools = toolset.get_tools(apps=[App.FACEBOOK])
+    
+    # Find the tools we need
+    get_posts_tool = next((t for t in tools if "GET_PAGE_POSTS" in t.name), None)
+    create_photo_tool = next((t for t in tools if "CREATE_PHOTO_POST" in t.name), None)
+    
+    if not get_posts_tool or not create_photo_tool:
+        log("✗ Required Facebook tools not found")
         sys.exit(1)
     
-    result = resp.json()
+    log(f"Found tools: {get_posts_tool.name}, {create_photo_tool.name}")
+    
+    # Step 1: Get recent posts for context
+    log("Fetching recent posts...")
+    posts_result = get_posts_tool.invoke({
+        "page_id": facebook_page_id,
+        "limit": 10,
+        "fields": "id,message,created_time"
+    })
+    
+    log(f"Posts fetched: {len(posts_result.get('data', {}).get('data', []))} posts")
+    
+    # Step 2: Generate caption (simplified - you can enhance with LLM)
+    log("Using simple caption for now...")
+    caption = "✨ daily update from the chaos zone 📚💭"
+    
+    # Step 3: Publish to Facebook
+    log("Publishing to Facebook...")
+    result = create_photo_tool.invoke({
+        "page_id": facebook_page_id,
+        "url": image_url,
+        "message": caption,
+        "published": True
+    })
+    
     log("✓ SUCCESS! Post published to Facebook")
     
-    # Extract relevant data from response
-    if "data" in result and "data" in result["data"]:
-        post_data = result["data"]["data"]
-        log(f"Post ID: {post_data.get('post_id', 'N/A')}")
-        log(f"Caption: {post_data.get('caption', 'N/A')[:100]}...")
-        log(f"Permalink: {post_data.get('permalink', 'N/A')}")
-    else:
-        log(f"Result: {result}")
-        
+    # Extract post details
+    post_data = result.get('data', {})
+    if 'data' in post_data:
+        post_data = post_data['data']
+    
+    post_id = post_data.get('id', post_data.get('post_id', 'N/A'))
+    log(f"Post ID: {post_id}")
+    log(f"Result: {result}")
+    
 except Exception as e:
     log(f"✗ Exception: {str(e)}")
     import traceback
