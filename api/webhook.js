@@ -1,8 +1,10 @@
-// Vercel serverless function to handle webhook and trigger Facebook post
-// This is called by GitHub Actions after image generation
+// Vercel serverless function
+// Receives image URL from GitHub Actions and uses Composio SDK to trigger recipe
+
+const { Composio } = require('composio-core');
 
 module.exports = async (req, res) => {
-  // Only accept POST requests
+  // Only POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -12,7 +14,7 @@ module.exports = async (req, res) => {
     
     // Validate secret
     if (secret !== process.env.WEBHOOK_SECRET) {
-      return res.status(401).json({ error: 'Unauthorized - invalid secret' });
+      return res.status(401).json({ error: 'Unauthorized' });
     }
     
     if (!image_url) {
@@ -20,52 +22,43 @@ module.exports = async (req, res) => {
     }
     
     console.log('[Webhook] Received image:', image_url);
-    console.log('[Webhook] Calling Rube recipe directly...');
+    console.log('[Webhook] Initializing Composio SDK...');
     
-    // Instead of calling the HTTP API endpoint (which doesn't work),
-    // we'll call the recipe execution endpoint that Rube uses internally
-    const axios = require('axios');
+    // Initialize Composio SDK
+    const client = new Composio({
+      apiKey: process.env.COMPOSIO_TOKEN
+    });
     
-    const recipeResponse = await axios.post(
-      `https://backend.composio.dev/api/v1/actions/RUBE_EXECUTE_RECIPE/execute`,
+    // Execute the recipe using SDK
+    console.log('[Webhook] Executing recipe...');
+    const result = await client.executeAction(
+      'RUBE_EXECUTE_RECIPE',
       {
-        input: {
-          recipe_id: process.env.RECIPE_ID || 'rcp_A9M-wR3IZxUp',
-          input_data: {
-            facebook_page_id: process.env.FACEBOOK_PAGE_ID || '1025914070602506',
-            image_url: image_url
-          }
+        recipe_id: process.env.RECIPE_ID || 'rcp_A9M-wR3IZxUp',
+        input_data: {
+          facebook_page_id: process.env.FACEBOOK_PAGE_ID || '1025914070602506',
+          image_url: image_url
         }
-      },
-      {
-        headers: {
-          'X-API-KEY': process.env.COMPOSIO_TOKEN,
-          'Content-Type': 'application/json'
-        },
-        timeout: 120000 // 2 minutes
       }
     );
     
-    console.log('[Webhook] Recipe execution completed');
-    
-    const result = recipeResponse.data?.data || recipeResponse.data;
+    console.log('[Webhook] Recipe execution successful!');
+    console.log('[Webhook] Result:', JSON.stringify(result));
     
     return res.status(200).json({
       success: true,
       message: 'Post published successfully',
-      post_id: result.post_id,
-      permalink: result.permalink,
-      caption: result.caption
+      data: result
     });
     
   } catch (error) {
     console.error('[Webhook] Error:', error.message);
-    console.error('[Webhook] Response:', error.response?.data);
+    console.error('[Webhook] Stack:', error.stack);
     
     return res.status(500).json({
       success: false,
       error: error.message,
-      details: error.response?.data
+      details: error.stack
     });
   }
 };
