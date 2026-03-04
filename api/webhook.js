@@ -1,8 +1,8 @@
-const https = require('https');
-const http = require('http');
+// Vercel serverless function to handle webhook and trigger Facebook post
+// This is called by GitHub Actions after image generation
 
 module.exports = async (req, res) => {
-  // Only POST
+  // Only accept POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -12,72 +12,60 @@ module.exports = async (req, res) => {
     
     // Validate secret
     if (secret !== process.env.WEBHOOK_SECRET) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      return res.status(401).json({ error: 'Unauthorized - invalid secret' });
     }
     
     if (!image_url) {
       return res.status(400).json({ error: 'image_url is required' });
     }
     
-    console.log('Received image:', image_url);
+    console.log('[Webhook] Received image:', image_url);
+    console.log('[Webhook] Calling Rube recipe directly...');
     
-    // Call Composio recipe
-    const recipePayload = JSON.stringify({
-      facebook_page_id: process.env.FACEBOOK_PAGE_ID || '1025914070602506',
-      image_url: image_url
-    });
+    // Instead of calling the HTTP API endpoint (which doesn't work),
+    // we'll call the recipe execution endpoint that Rube uses internally
+    const axios = require('axios');
     
-    const options = {
-      hostname: 'backend.composio.dev',
-      path: `/api/v1/rube/recipes/${process.env.RECIPE_ID || 'rcp_A9M-wR3IZxUp'}/execute`,
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.COMPOSIO_TOKEN}`,
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(recipePayload)
-      }
-    };
-    
-    const recipeResult = await new Promise((resolve, reject) => {
-      const recipeReq = https.request(options, (recipeRes) => {
-        let data = '';
-        recipeRes.on('data', chunk => data += chunk);
-        recipeRes.on('end', () => {
-          try {
-            resolve({ status: recipeRes.statusCode, data: JSON.parse(data) });
-          } catch (e) {
-            resolve({ status: recipeRes.statusCode, data: data });
+    const recipeResponse = await axios.post(
+      `https://backend.composio.dev/api/v1/actions/RUBE_EXECUTE_RECIPE/execute`,
+      {
+        input: {
+          recipe_id: process.env.RECIPE_ID || 'rcp_A9M-wR3IZxUp',
+          input_data: {
+            facebook_page_id: process.env.FACEBOOK_PAGE_ID || '1025914070602506',
+            image_url: image_url
           }
-        });
-      });
-      
-      recipeReq.on('error', reject);
-      recipeReq.write(recipePayload);
-      recipeReq.end();
+        }
+      },
+      {
+        headers: {
+          'X-API-KEY': process.env.COMPOSIO_TOKEN,
+          'Content-Type': 'application/json'
+        },
+        timeout: 120000 // 2 minutes
+      }
+    );
+    
+    console.log('[Webhook] Recipe execution completed');
+    
+    const result = recipeResponse.data?.data || recipeResponse.data;
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Post published successfully',
+      post_id: result.post_id,
+      permalink: result.permalink,
+      caption: result.caption
     });
-    
-    console.log('Recipe response:', recipeResult.status);
-    
-    if (recipeResult.status === 200 || recipeResult.status === 201) {
-      return res.status(200).json({
-        success: true,
-        message: 'Post published',
-        data: recipeResult.data
-      });
-    } else {
-      console.error('Recipe failed:', recipeResult);
-      return res.status(500).json({
-        success: false,
-        error: 'Recipe execution failed',
-        details: recipeResult
-      });
-    }
     
   } catch (error) {
-    console.error('Webhook error:', error);
+    console.error('[Webhook] Error:', error.message);
+    console.error('[Webhook] Response:', error.response?.data);
+    
     return res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
+      details: error.response?.data
     });
   }
 };
