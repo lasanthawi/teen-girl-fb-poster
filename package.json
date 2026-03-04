@@ -1,12 +1,7 @@
 {
-  "name": "teen-girl-fb-webhook",
+  "name": "teen-girl-fb-poster",
   "version": "1.0.0",
-  "description": "Webhook bridge to trigger Composio recipe",
-  "main": "api/webhook.js",
-  "scripts": {
-    "dev": "vercel dev"
-  },
   "dependencies": {
-    "node-fetch": "^3.3.0"
+    "composio-core": "^latest"
   }
 }
