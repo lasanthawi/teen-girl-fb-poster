@@ -34,8 +34,7 @@ jobs:
           echo "=================================================="
           echo "IMAGE GENERATED SUCCESSFULLY"
           echo "=================================================="
-          echo "Image URL:"
           cat image_url.txt
-          echo ""
-          echo "Rube will automatically detect and publish this image"
+          echo "=================================================="
+          echo "Rube will automatically publish this image"
           echo "=================================================="
