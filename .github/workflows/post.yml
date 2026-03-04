@@ -1,4 +1,4 @@
-name: Teen Girl Daily Log Auto-Poster
+name: Teen Girl Daily Log - Image Generation Only
 
 on:
   schedule:
@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  generate-and-publish:
+  generate-image:
     runs-on: ubuntu-latest
-    timeout-minutes: 10  # sync FAL ~1–2 min + publish
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v3
       
@@ -30,7 +30,8 @@ jobs:
           LORA_MODEL_URL: ${{ secrets.LORA_MODEL_URL }}
         run: python generate_image.py
       
-      - name: Publish to Facebook via Composio
-        env:
-          COMPOSIO_TOKEN: ${{ secrets.COMPOSIO_TOKEN }}
-        run: python publish.py
+      - name: Image generation complete
+        run: |
+          echo "✓ Image generated and saved to image_url.txt"
+          echo "Rube will pick this up and publish to Facebook"
+          cat image_url.txt
