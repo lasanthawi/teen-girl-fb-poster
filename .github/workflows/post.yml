@@ -1,4 +1,4 @@
-name: Teen Girl Daily Log Auto-Poster
+name: Generate Images Only
 
 on:
   schedule:
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  generate-and-publish:
+  generate-image:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -30,8 +30,13 @@ jobs:
           LORA_MODEL_URL: ${{ secrets.LORA_MODEL_URL }}
         run: python generate_image.py
       
-      - name: Publish to Facebook via Vercel Webhook
-        env:
-          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
-          WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
-        run: python publish.py
+      - name: Display generated image URL
+        run: |
+          echo "=================================================="
+          echo "✓ IMAGE GENERATED SUCCESSFULLY"
+          echo "=================================================="
+          echo "Image URL:"
+          cat image_url.txt
+          echo ""
+          echo "Rube will automatically monitor this workflow and publish to Facebook"
+          echo "=================================================="
