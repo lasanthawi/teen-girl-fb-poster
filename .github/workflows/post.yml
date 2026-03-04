@@ -1,4 +1,4 @@
-name: Generate Images Only
+name: Generate Images with FAL
 
 on:
   schedule:
@@ -24,19 +24,18 @@ jobs:
           pip install -r requirements.txt
       
       - name: Generate image with FAL
-        id: generate
         env:
           FAL_API_KEY: ${{ secrets.FAL_API_KEY }}
           LORA_MODEL_URL: ${{ secrets.LORA_MODEL_URL }}
         run: python generate_image.py
       
-      - name: Display generated image URL
+      - name: Display image URL
         run: |
           echo "=================================================="
-          echo "✓ IMAGE GENERATED SUCCESSFULLY"
+          echo "IMAGE GENERATED SUCCESSFULLY"
           echo "=================================================="
           echo "Image URL:"
           cat image_url.txt
           echo ""
-          echo "Rube will automatically monitor this workflow and publish to Facebook"
+          echo "Rube will automatically detect and publish this image"
           echo "=================================================="
