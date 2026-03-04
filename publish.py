@@ -1,7 +1,7 @@
 import os
 import sys
 from datetime import datetime
-from composio import ComposioToolSet, App
+from composio import Composio, Action
 
 def log(msg):
     print(f"[{datetime.utcnow().isoformat()}] {msg}")
@@ -16,57 +16,48 @@ api_key = os.environ.get("COMPOSIO_TOKEN").strip()
 facebook_page_id = "1025914070602506"
 
 try:
-    # Initialize Composio
-    log("Initializing Composio...")
-    toolset = ComposioToolSet(api_key=api_key)
-    
-    # Get Facebook tools
-    log("Getting Facebook tools...")
-    tools = toolset.get_tools(apps=[App.FACEBOOK])
-    
-    # Find the tools we need
-    get_posts_tool = next((t for t in tools if "GET_PAGE_POSTS" in t.name), None)
-    create_photo_tool = next((t for t in tools if "CREATE_PHOTO_POST" in t.name), None)
-    
-    if not get_posts_tool or not create_photo_tool:
-        log("✗ Required Facebook tools not found")
-        sys.exit(1)
-    
-    log(f"Found tools: {get_posts_tool.name}, {create_photo_tool.name}")
+    # Initialize Composio client
+    log("Initializing Composio client...")
+    client = Composio(api_key=api_key)
     
     # Step 1: Get recent posts for context
-    log("Fetching recent posts...")
-    posts_result = get_posts_tool.invoke({
-        "page_id": facebook_page_id,
-        "limit": 10,
-        "fields": "id,message,created_time"
-    })
+    log("Fetching recent Facebook posts...")
+    posts_result = client.execute_action(
+        action=Action.FACEBOOK_GET_PAGE_POSTS,
+        params={
+            "page_id": facebook_page_id,
+            "limit": 10,
+            "fields": "id,message,created_time"
+        }
+    )
     
-    log(f"Posts fetched: {len(posts_result.get('data', {}).get('data', []))} posts")
+    log(f"Posts result: {posts_result}")
     
-    # Step 2: Generate caption (simplified - you can enhance with LLM)
-    log("Using simple caption for now...")
-    caption = "✨ daily update from the chaos zone 📚💭"
+    # Step 2: Generate caption (simplified for now)
+    caption = "✨ daily chaos update 📚💭 keeping it real"
     
     # Step 3: Publish to Facebook
-    log("Publishing to Facebook...")
-    result = create_photo_tool.invoke({
-        "page_id": facebook_page_id,
-        "url": image_url,
-        "message": caption,
-        "published": True
-    })
+    log(f"Publishing to Facebook with caption: {caption}")
+    result = client.execute_action(
+        action=Action.FACEBOOK_CREATE_PHOTO_POST,
+        params={
+            "page_id": facebook_page_id,
+            "url": image_url,
+            "message": caption,
+            "published": True
+        }
+    )
     
     log("✓ SUCCESS! Post published to Facebook")
-    
-    # Extract post details
-    post_data = result.get('data', {})
-    if 'data' in post_data:
-        post_data = post_data['data']
-    
-    post_id = post_data.get('id', post_data.get('post_id', 'N/A'))
-    log(f"Post ID: {post_id}")
     log(f"Result: {result}")
+    
+    # Extract post ID
+    if hasattr(result, 'data'):
+        post_data = result.data
+    else:
+        post_data = result
+    
+    log(f"Post data: {post_data}")
     
 except Exception as e:
     log(f"✗ Exception: {str(e)}")
