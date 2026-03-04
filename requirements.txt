@@ -1,2 +1,2 @@
 requests
-composio-core
+fal-client
