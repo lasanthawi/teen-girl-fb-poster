@@ -2,8 +2,8 @@ name: Teen Girl Daily Log Auto-Poster
 
 on:
   schedule:
-    # 2:30 PM SL (9:00 AM UTC) and 7:30 PM SL (2:00 PM UTC)
-    - cron: '0 9,14 * * *'
+    # Every 3 hours
+    - cron: '0 */3 * * *'
   workflow_dispatch:
 
 jobs:
