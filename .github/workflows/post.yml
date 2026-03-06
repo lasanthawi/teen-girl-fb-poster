@@ -1,4 +1,4 @@
-name: Generate & Trigger Publishing
+name: Generate Teen Girl Image
 
 on:
   schedule:
@@ -7,31 +7,64 @@ on:
   workflow_dispatch:
 
 jobs:
-  generate-and-trigger:
+  generate-image:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v3
       
-      - name: Trigger Rube Recipe via Webhook
+      - name: Generate Image via FAL AI
         env:
-          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
-          WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+          FAL_KEY: ${{ secrets.FAL_KEY }}
         run: |
-          echo "Calling webhook to trigger complete flow..."
-          curl -X POST "$WEBHOOK_URL" \
-            -H "Content-Type: application/json" \
-            -d '{"secret": "'"$WEBHOOK_SECRET"'"}' \
-            -w "\nHTTP Status: %{http_code}\n" \
-            -o response.json
-          echo "Response:"
-          cat response.json
+          echo "Generating image via FAL AI..."
           
-          # Check if successful
-          if grep -q '"success":true' response.json; then
-            echo "✓ Post published successfully!"
-            exit 0
-          else
-            echo "✗ Webhook call failed"
+          # Call FAL AI to generate image
+          response=$(curl -X POST "https://queue.fal.run/fal-ai/flux-lora" \
+            -H "Authorization: Key $FAL_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "prompt": "A realistic photo of a teenage girl in casual everyday attire, natural lighting, candid moment",
+              "image_size": "square_hd",
+              "num_inference_steps": 28,
+              "num_images": 1,
+              "enable_safety_checker": true,
+              "output_format": "jpeg"
+            }')
+          
+          echo "FAL Response: $response"
+          
+          # Extract request ID
+          request_id=$(echo "$response" | jq -r '.request_id')
+          
+          if [ "$request_id" = "null" ] || [ -z "$request_id" ]; then
+            echo "✗ Failed to get request_id"
             exit 1
           fi
+          
+          echo "Request ID: $request_id"
+          echo "Waiting for image generation..."
+          
+          # Poll for result (max 3 minutes)
+          for i in {1..36}; do
+            sleep 5
+            result=$(curl -s "https://queue.fal.run/fal-ai/flux-lora/requests/$request_id" \
+              -H "Authorization: Key $FAL_KEY")
+            
+            status=$(echo "$result" | jq -r '.status')
+            echo "Status check $i: $status"
+            
+            if [ "$status" = "COMPLETED" ]; then
+              image_url=$(echo "$result" | jq -r '.images[0].url')
+              echo "✓ Image generated successfully!"
+              echo "Image URL: $image_url"
+              exit 0
+            elif [ "$status" = "FAILED" ]; then
+              echo "✗ Image generation failed"
+              echo "$result"
+              exit 1
+            fi
+          done
+          
+          echo "✗ Timeout waiting for image generation"
+          exit 1
