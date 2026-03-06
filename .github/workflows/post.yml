@@ -1,4 +1,4 @@
-name: Generate Teen Girl Image
+name: Generate & Trigger Publishing
 
 on:
   schedule:
@@ -7,69 +7,31 @@ on:
   workflow_dispatch:
 
 jobs:
-  generate-image:
+  generate-and-trigger:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v3
       
-      - name: Generate Image via FAL AI
+      - name: Trigger Rube Recipe via Webhook
         env:
-          FAL_KEY: ${{ secrets.FAL_API_KEY }}
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+          WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
         run: |
-          echo "Generating image via FAL AI (Flux Schnell - Fast)..."
-          
-          # Use faster Flux Schnell model with queue
-          response=$(curl -X POST "https://queue.fal.run/fal-ai/flux/schnell" \
-            -H "Authorization: Key $FAL_KEY" \
+          echo "Calling webhook to trigger complete flow..."
+          curl -X POST "$WEBHOOK_URL" \
             -H "Content-Type: application/json" \
-            -d '{
-              "prompt": "A realistic photo of a teenage girl in casual everyday attire, natural lighting, candid moment, high quality, detailed",
-              "image_size": "square_hd",
-              "num_inference_steps": 4,
-              "num_images": 1,
-              "enable_safety_checker": true
-            }')
+            -d '{"secret": "'"$WEBHOOK_SECRET"'"}' \
+            -w "\nHTTP Status: %{http_code}\n" \
+            -o response.json
+          echo "Response:"
+          cat response.json
           
-          echo "FAL Response: $response"
-          
-          # Extract request ID
-          request_id=$(echo "$response" | jq -r '.request_id')
-          
-          if [ "$request_id" = "null" ] || [ -z "$request_id" ]; then
-            echo "✗ Failed to get request_id"
-            echo "Full response: $response"
+          # Check if successful
+          if grep -q '"success":true' response.json; then
+            echo "✓ Post published successfully!"
+            exit 0
+          else
+            echo "✗ Webhook call failed"
             exit 1
           fi
-          
-          echo "Request ID: $request_id"
-          echo "Waiting for image generation..."
-          
-          # Poll for result (extended to 8 minutes max)
-          for i in {1..96}; do
-            sleep 5
-            result=$(curl -s "https://queue.fal.run/fal-ai/flux/schnell/requests/$request_id" \
-              -H "Authorization: Key $FAL_KEY")
-            
-            # Debug: show full response on first few checks
-            if [ $i -le 3 ]; then
-              echo "Full response check $i: $result"
-            fi
-            
-            status=$(echo "$result" | jq -r '.status')
-            echo "Status check $i: $status"
-            
-            if [ "$status" = "COMPLETED" ]; then
-              image_url=$(echo "$result" | jq -r '.images[0].url')
-              echo "✓ Image generated successfully!"
-              echo "Image URL: $image_url"
-              exit 0
-            elif [ "$status" = "FAILED" ]; then
-              echo "✗ Image generation failed"
-              echo "$result"
-              exit 1
-            fi
-          done
-          
-          echo "✗ Timeout waiting for image generation after 8 minutes"
-          exit 1
