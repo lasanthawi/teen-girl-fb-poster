@@ -1,4 +1,4 @@
-name: Generate & Trigger Publishing
+name: Generate Teen Girl Image
 
 on:
   schedule:
@@ -7,31 +7,37 @@ on:
   workflow_dispatch:
 
 jobs:
-  generate-and-trigger:
+  generate-image:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v3
-      
-      - name: Trigger Rube Recipe via Webhook
-        env:
-          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
-          WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
         run: |
-          echo "Calling webhook to trigger complete flow..."
-          curl -X POST "$WEBHOOK_URL" \
-            -H "Content-Type: application/json" \
-            -d '{"secret": "'"$WEBHOOK_SECRET"'"}' \
-            -w "\nHTTP Status: %{http_code}\n" \
-            -o response.json
-          echo "Response:"
-          cat response.json
-          
-          # Check if successful
-          if grep -q '"success":true' response.json; then
-            echo "✓ Post published successfully!"
-            exit 0
-          else
-            echo "✗ Webhook call failed"
-            exit 1
-          fi
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Generate image with FAL
+        env:
+          FAL_API_KEY: ${{ secrets.FAL_API_KEY }}
+          LORA_MODEL_URL: ${{ secrets.LORA_MODEL_URL }}
+        run: python generate_image.py
+
+      - name: Display image URL
+        run: |
+          echo "=================================================="
+          echo "IMAGE GENERATED SUCCESSFULLY"
+          echo "=================================================="
+          echo "Image URL:"
+          cat image_url.txt
+          echo ""
+          echo "Rube will automatically detect and publish this image"
+          echo "=================================================="
+          echo "Rube will automatically publish this image"
+          echo "=================================================="
