@@ -9,7 +9,7 @@ on:
 jobs:
   generate-image:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v3
       
@@ -17,19 +17,18 @@ jobs:
         env:
           FAL_KEY: ${{ secrets.FAL_API_KEY }}
         run: |
-          echo "Generating image via FAL AI..."
+          echo "Generating image via FAL AI (Flux Schnell - Fast)..."
           
-          # Call FAL AI to generate image
-          response=$(curl -X POST "https://queue.fal.run/fal-ai/flux-lora" \
+          # Use faster Flux Schnell model with queue
+          response=$(curl -X POST "https://queue.fal.run/fal-ai/flux/schnell" \
             -H "Authorization: Key $FAL_KEY" \
             -H "Content-Type: application/json" \
             -d '{
-              "prompt": "A realistic photo of a teenage girl in casual everyday attire, natural lighting, candid moment",
+              "prompt": "A realistic photo of a teenage girl in casual everyday attire, natural lighting, candid moment, high quality, detailed",
               "image_size": "square_hd",
-              "num_inference_steps": 28,
+              "num_inference_steps": 4,
               "num_images": 1,
-              "enable_safety_checker": true,
-              "output_format": "jpeg"
+              "enable_safety_checker": true
             }')
           
           echo "FAL Response: $response"
@@ -39,17 +38,23 @@ jobs:
           
           if [ "$request_id" = "null" ] || [ -z "$request_id" ]; then
             echo "✗ Failed to get request_id"
+            echo "Full response: $response"
             exit 1
           fi
           
           echo "Request ID: $request_id"
           echo "Waiting for image generation..."
           
-          # Poll for result (max 3 minutes)
-          for i in {1..36}; do
+          # Poll for result (extended to 8 minutes max)
+          for i in {1..96}; do
             sleep 5
-            result=$(curl -s "https://queue.fal.run/fal-ai/flux-lora/requests/$request_id" \
+            result=$(curl -s "https://queue.fal.run/fal-ai/flux/schnell/requests/$request_id" \
               -H "Authorization: Key $FAL_KEY")
+            
+            # Debug: show full response on first few checks
+            if [ $i -le 3 ]; then
+              echo "Full response check $i: $result"
+            fi
             
             status=$(echo "$result" | jq -r '.status')
             echo "Status check $i: $status"
@@ -66,5 +71,5 @@ jobs:
             fi
           done
           
-          echo "✗ Timeout waiting for image generation"
+          echo "✗ Timeout waiting for image generation after 8 minutes"
           exit 1
