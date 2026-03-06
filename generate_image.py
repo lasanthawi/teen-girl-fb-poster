@@ -2,6 +2,7 @@ import os
 import sys
 import random
 import requests
+import time
 from datetime import datetime
 
 def log(msg):
@@ -22,7 +23,7 @@ PROMPTS = [
 # Negative prompt to avoid common AI artifacts
 NEGATIVE_PROMPT = "deformed, distorted, disfigured, bad anatomy, wrong anatomy, extra limbs, extra arms, extra hands, extra fingers, missing arms, missing hands, fused fingers, too many fingers, mutated hands, poorly drawn hands, poorly drawn face, mutation, ugly, bad proportions, gross proportions, malformed limbs, floating limbs, disconnected limbs, long neck, cross-eyed, blurry, low quality, watermark, text"
 
-log("Generating HIGH RESOLUTION image with FAL (sync API, Lora 1.8, Square HD 1024x1024, 35 steps)...")
+log("Generating HIGH RESOLUTION image with FAL (async queue, Lora 1.8, Square HD 1024x1024, 35 steps)...")
 prompt = random.choice(PROMPTS)
 log(f"Prompt: {prompt}")
 log(f"Negative prompt: {NEGATIVE_PROMPT[:100]}...")
@@ -30,42 +31,90 @@ log(f"Negative prompt: {NEGATIVE_PROMPT[:100]}...")
 fal_key = os.environ.get("FAL_API_KEY").strip()
 lora_url = os.environ.get("LORA_MODEL_URL").strip()
 
-# Synchronous request with improved parameters for better anatomy
-resp = requests.post(
-    "https://fal.run/fal-ai/flux-lora",
+# Step 1: Submit to queue (async) - returns immediately with request_id
+log("Submitting to FAL queue...")
+submit_resp = requests.post(
+    "https://queue.fal.run/fal-ai/flux-lora",
     headers={
         "Authorization": f"Key {fal_key}",
         "Content-Type": "application/json",
     },
     json={
         "prompt": prompt,
-        "negative_prompt": NEGATIVE_PROMPT,  # Added to avoid artifacts
-        "image_size": "square_hd",  # 1024x1024 HD resolution
-        "num_inference_steps": 35,  # More steps = better quality
-        "guidance_scale": 3.5,  # Increased from 2.5 for better prompt adherence
+        "negative_prompt": NEGATIVE_PROMPT,
+        "image_size": "square_hd",  # 1024x1024 HD
+        "num_inference_steps": 35,
+        "guidance_scale": 3.5,
         "num_images": 1,
         "loras": [{"path": lora_url, "scale": 1.8}],
         "enable_safety_checker": True,
     },
-    timeout=300,  # 5 min max wait
+    timeout=30,
 )
 
-if resp.status_code != 200:
-    log(f"✗ FAL request failed: {resp.status_code} {resp.text[:500]}")
+if submit_resp.status_code != 200:
+    log(f"✗ FAL queue submit failed: {submit_resp.status_code} {submit_resp.text[:500]}")
     sys.exit(1)
 
-result = resp.json()
-image_url = result["images"][0]["url"]
-log(f"✓ Image: {image_url}")
+queue_data = submit_resp.json()
+request_id = queue_data.get("request_id")
 
-# Save for Rube recipe
-with open("image_url.txt", "w") as f:
-    f.write(image_url)
+if not request_id:
+    log(f"✗ No request_id in response: {queue_data}")
+    sys.exit(1)
 
-# GitHub Actions output
-gh_out = os.environ.get("GITHUB_OUTPUT")
-if gh_out:
-    with open(gh_out, "a") as f:
-        f.write(f"image_url={image_url}\n")
+log(f"✓ Queued with request_id: {request_id}")
 
-sys.exit(0)
+# Step 2: Poll status until complete (max 8 minutes)
+status_url = f"https://queue.fal.run/fal-ai/flux-lora/requests/{request_id}"
+max_wait = 480  # 8 minutes
+start_time = time.time()
+checks = 0
+
+while (time.time() - start_time) < max_wait:
+    time.sleep(10)  # Check every 10 seconds
+    checks += 1
+    
+    status_resp = requests.get(
+        status_url,
+        headers={"Authorization": f"Key {fal_key}"},
+        timeout=30,
+    )
+    
+    if status_resp.status_code != 200:
+        log(f"Check #{checks}: HTTP {status_resp.status_code}")
+        continue
+    
+    status_data = status_resp.json()
+    status = status_data.get("status")
+    
+    log(f"Check #{checks}: status={status}")
+    
+    if status == "COMPLETED":
+        images = status_data.get("images", [])
+        if not images:
+            log(f"✗ No images in completed response: {status_data}")
+            sys.exit(1)
+        
+        image_url = images[0]["url"]
+        log(f"✓ Image generated: {image_url}")
+        
+        # Save for Rube recipe
+        with open("image_url.txt", "w") as f:
+            f.write(image_url)
+        
+        # GitHub Actions output
+        gh_out = os.environ.get("GITHUB_OUTPUT")
+        if gh_out:
+            with open(gh_out, "a") as f:
+                f.write(f"image_url={image_url}\n")
+        
+        sys.exit(0)
+    
+    elif status == "FAILED":
+        error = status_data.get("error", "Unknown error")
+        log(f"✗ Generation failed: {error}")
+        sys.exit(1)
+
+log(f"✗ Timeout after {max_wait}s (status still pending)")
+sys.exit(1)
