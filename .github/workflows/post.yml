@@ -15,7 +15,7 @@ jobs:
       
       - name: Generate Image via FAL AI
         env:
-          FAL_KEY: ${{ secrets.FAL_KEY }}
+          FAL_KEY: ${{ secrets.FAL_API_KEY }}
         run: |
           echo "Generating image via FAL AI..."
           
