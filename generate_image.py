@@ -58,63 +58,69 @@ if submit_resp.status_code != 200:
 
 queue_data = submit_resp.json()
 request_id = queue_data.get("request_id")
+response_url = queue_data.get("response_url")  # Use this for polling
 
-if not request_id:
-    log(f"✗ No request_id in response: {queue_data}")
+if not request_id or not response_url:
+    log(f"✗ Missing request_id or response_url: {queue_data}")
     sys.exit(1)
 
 log(f"✓ Queued with request_id: {request_id}")
+log(f"Response URL: {response_url}")
 
-# Step 2: Poll status until complete (max 8 minutes)
-status_url = f"https://queue.fal.run/fal-ai/flux-lora/requests/{request_id}"
-max_wait = 480  # 8 minutes
+# Step 2: Poll result from response_url (not status_url)
+max_wait = 120  # 2 minutes should be enough
 start_time = time.time()
 checks = 0
 
 while (time.time() - start_time) < max_wait:
-    time.sleep(10)  # Check every 10 seconds
+    time.sleep(5)  # Check every 5 seconds
     checks += 1
     
-    status_resp = requests.get(
-        status_url,
-        headers={"Authorization": f"Key {fal_key}"},
-        timeout=30,
-    )
-    
-    if status_resp.status_code != 200:
-        log(f"Check #{checks}: HTTP {status_resp.status_code}")
-        continue
-    
-    status_data = status_resp.json()
-    status = status_data.get("status")
-    
-    log(f"Check #{checks}: status={status}")
-    
-    if status == "COMPLETED":
-        images = status_data.get("images", [])
-        if not images:
-            log(f"✗ No images in completed response: {status_data}")
-            sys.exit(1)
+    try:
+        # Use response_url which returns the actual result when ready
+        result_resp = requests.get(
+            response_url,
+            headers={"Authorization": f"Key {fal_key}"},
+            timeout=30,
+        )
         
-        image_url = images[0]["url"]
-        log(f"✓ Image generated: {image_url}")
+        if result_resp.status_code == 200:
+            result_data = result_resp.json()
+            
+            # Check if we have the final result with images
+            if "images" in result_data and len(result_data["images"]) > 0:
+                image_url = result_data["images"][0]["url"]
+                log(f"✓ Image generated (check #{checks}): {image_url}")
+                
+                # Save for Rube recipe
+                with open("image_url.txt", "w") as f:
+                    f.write(image_url)
+                
+                # GitHub Actions output
+                gh_out = os.environ.get("GITHUB_OUTPUT")
+                if gh_out:
+                    with open(gh_out, "a") as f:
+                        f.write(f"image_url={image_url}\n")
+                
+                sys.exit(0)
+            
+            # Check for errors
+            if "error" in result_data:
+                log(f"✗ Generation failed: {result_data['error']}")
+                sys.exit(1)
+            
+            # Still in queue/processing
+            status = result_data.get("status", "processing")
+            log(f"Check #{checks}: {status}")
         
-        # Save for Rube recipe
-        with open("image_url.txt", "w") as f:
-            f.write(image_url)
-        
-        # GitHub Actions output
-        gh_out = os.environ.get("GITHUB_OUTPUT")
-        if gh_out:
-            with open(gh_out, "a") as f:
-                f.write(f"image_url={image_url}\n")
-        
-        sys.exit(0)
+        elif result_resp.status_code == 404:
+            # Request not ready yet
+            log(f"Check #{checks}: Request not ready (404)")
+        else:
+            log(f"Check #{checks}: HTTP {result_resp.status_code}")
     
-    elif status == "FAILED":
-        error = status_data.get("error", "Unknown error")
-        log(f"✗ Generation failed: {error}")
-        sys.exit(1)
+    except Exception as e:
+        log(f"Check #{checks}: Exception - {str(e)[:100]}")
 
-log(f"✗ Timeout after {max_wait}s (status still pending)")
+log(f"✗ Timeout after {max_wait}s (image not generated in time)")
 sys.exit(1)
