@@ -9,71 +9,71 @@ from datetime import datetime
 def log(msg):
     print(f"[{datetime.utcnow().isoformat()}] {msg}")
 
-# OUTDOOR & VARIED LOCATIONS: Parks, cafes, streets, beach, gym, etc.
+# OUTDOOR & VARIED LOCATIONS with TIGHT ATHLETIC WEAR: Yoga pants, leggings, tight shorts, sports bras
 PROMPTS = [
-    # Park & outdoor nature
-    "photo of a young woman age 19, sitting on park bench, white crop top and denim shorts, park with trees, sunny day, natural lighting",
-    "photo of a young woman age 18, walking on path, black crop top and high-waisted skinny jeans, city park, casual outdoor vibe",
-    "photo of a teen woman age 20, sitting on grass, oversized crop tee and biker shorts, park picnic area, relaxed outdoor look",
-    "photo of a young woman age 19, standing by tree, fitted crop top and pleated mini skirt, botanical garden, spring vibes",
-
-    # Beach & waterfront
-    "photo of a young woman age 18, standing on beach, sports bra and high-waisted shorts, beach sunset, summer aesthetic",
-    "photo of a teen woman age 20, sitting on beach towel, crop bikini top and denim cutoffs, beach, vacation vibes",
-    "photo of a young woman age 19, walking on boardwalk, tank top and athletic shorts, beach pier, coastal style",
-    "photo of a young woman age 18, sitting on rocks, crop top and yoga leggings, rocky beach, ocean background",
-
-    # Coffee shop & cafe
-    "photo of a teen woman age 20, sitting at cafe table, oversized tee and tight denim shorts, outdoor cafe, coffee date style",
-    "photo of a young woman age 19, standing with coffee cup, tank top and high-waisted jeans, cafe patio, casual chic",
-    "photo of a young woman age 18, sitting by window, crop sweater and skinny jeans, cozy cafe interior, autumn vibes",
-    "photo of a teen woman age 20, leaning on counter, fitted top and bike shorts, modern cafe, trendy look",
-
-    # Urban streets & city
-    "photo of a young woman age 19, walking on sidewalk, crop top and black skinny jeans, city street, urban style",
-    "photo of a young woman age 18, standing by graffiti wall, fitted tank and ripped jeans, downtown alley, streetwear aesthetic",
-    "photo of a teen woman age 20, sitting on steps, off-shoulder top and tight jeans, city building entrance, edgy look",
-    "photo of a young woman age 19, leaning on railing, crop hoodie and leggings, urban bridge, street fashion",
-
-    # Gym & fitness center
-    "photo of a young woman age 18, standing in gym, sports bra and tight shorts, gym mirror background, workout ready",
-    "photo of a teen woman age 20, sitting on gym bench, crop sports top and leggings, fitness center, athletic vibe",
-    "photo of a young woman age 19, stretching pose, athletic tank and bike shorts, gym studio, active lifestyle",
-    "photo of a young woman age 18, holding water bottle, compression top and gym shorts, fitness center, post-workout",
-
-    # Shopping & retail
-    "photo of a teen woman age 20, standing in store, crop top and mini skirt, boutique shop, shopping spree vibe",
-    "photo of a young woman age 19, trying on clothes, fitted top and denim skirt, clothing store mirror, fashion shopping",
-    "photo of a young woman age 18, walking with bags, tank top and shorts, mall corridor, shopping day",
-    "photo of a teen woman age 20, sitting in store, bodycon dress, boutique fitting area, trying outfits",
-
-    # Library & study spaces
-    "photo of a young woman age 19, sitting at desk, crop sweater and jeans, library study area, student life",
-    "photo of a young woman age 18, standing by bookshelf, fitted tee and leggings, library interior, casual academic",
-    "photo of a teen woman age 20, reading at table, tank top and bike shorts, study lounge, focused vibe",
-    "photo of a young woman age 19, walking between shelves, crop cardigan and shorts, modern library, studious look",
-
-    # Rooftop & balcony
-    "photo of a young woman age 18, standing on rooftop, crop top and high-waisted jeans, city skyline background, golden hour",
-    "photo of a teen woman age 20, sitting on balcony railing, sports bra and shorts, apartment balcony, sunset vibes",
-    "photo of a young woman age 19, leaning on edge, tank top and skinny jeans, rooftop terrace, evening lights",
-    "photo of a young woman age 18, standing with view, fitted dress, balcony overlooking city, dreamy aesthetic",
-
-    # Restaurant & dining
-    "photo of a teen woman age 20, sitting at restaurant table, halter top and jeans, trendy restaurant, dinner date",
-    "photo of a young woman age 19, standing by bar, crop top and mini skirt, restaurant interior, going out look",
-    "photo of a young woman age 18, sitting in booth, tube top and shorts, diner setting, casual meal vibes",
-    "photo of a teen woman age 20, at outdoor dining, fitted tank and skirt, patio restaurant, brunch style",
-
-    # Pool & resort
-    "photo of a young woman age 19, sitting poolside, bikini top and shorts, hotel pool area, vacation mode",
-    "photo of a young woman age 18, standing by pool, crop swimsuit and sarong, resort pool, summer getaway",
-    "photo of a teen woman age 20, lying on lounge chair, sports bikini and sunglasses, poolside, relaxed vacation",
-    "photo of a young woman age 19, walking around pool, swim top and cover-up shorts, resort setting, tropical vibes",
+    # Tight yoga pants & leggings - outdoor
+    "photo of a young woman age 19, sitting on park bench, sports bra and tight black yoga pants, park with trees, sunny day, fitness vibe",
+    "photo of a young woman age 18, walking on path, crop top and high-waisted leggings, city park, athletic outdoor look",
+    "photo of a teen woman age 20, stretching on grass, fitted tank and colorful yoga leggings, park picnic area, workout aesthetic",
+    "photo of a young woman age 19, standing by tree, sports bra and tight gym leggings, botanical garden, active wear style",
+    
+    # Tight shorts & bike shorts - beach/outdoor
+    "photo of a young woman age 18, standing on beach, sports bra and tight athletic shorts, beach sunset, summer fitness vibe",
+    "photo of a teen woman age 20, sitting on beach towel, crop bikini top and spandex bike shorts, beach, sporty beach look",
+    "photo of a young woman age 19, walking on boardwalk, tank top and tight denim shorts, beach pier, casual hot style",
+    "photo of a young woman age 18, sitting on rocks, fitted top and black bike shorts, rocky beach, athleisure aesthetic",
+    
+    # Leggings & tight bottoms - cafe/urban
+    "photo of a teen woman age 20, sitting at cafe table, crop sweater and skin-tight leggings, outdoor cafe, cozy athletic style",
+    "photo of a young woman age 19, standing with coffee cup, sports bra and high-waisted yoga pants, cafe patio, fitness casual",
+    "photo of a young woman age 18, sitting by window, fitted tee and printed leggings, cozy cafe interior, athleisure chic",
+    "photo of a teen woman age 20, leaning on counter, crop top and tight black leggings, modern cafe, trendy athletic look",
+    
+    # Gym wear - tight shorts, leggings, sports bras
+    "photo of a young woman age 19, standing in gym, sports bra and compression shorts, gym mirror background, workout ready",
+    "photo of a young woman age 18, sitting on gym bench, crop sports top and skin-tight leggings, fitness center, athletic hot vibe",
+    "photo of a teen woman age 20, stretching pose, sports bra and tight yoga pants, gym studio, active flexibility",
+    "photo of a young woman age 19, holding water bottle, compression top and spandex shorts, fitness center, post-workout look",
+    
+    # Athletic wear - city streets
+    "photo of a young woman age 18, walking on sidewalk, sports bra and high-waisted tight shorts, city street, urban athletic style",
+    "photo of a teen woman age 20, standing by graffiti wall, crop tank and skin-tight leggings, downtown alley, streetwear fitness",
+    "photo of a young woman age 19, sitting on steps, fitted sports top and bike shorts, city building entrance, sporty urban",
+    "photo of a young woman age 18, leaning on railing, crop hoodie and tight yoga pants, urban bridge, street athleisure",
+    
+    # Yoga pants & tight bottoms - various locations
+    "photo of a teen woman age 20, standing in store, sports bra and high-waisted yoga leggings, boutique shop, shopping in gym wear",
+    "photo of a young woman age 19, trying on clothes, fitted tank and tight black leggings, clothing store mirror, athletic shopping",
+    "photo of a young woman age 18, walking with bags, crop top and spandex bike shorts, mall corridor, casual athletic day",
+    "photo of a teen woman age 20, sitting in store, bodycon sports dress and leggings, boutique fitting area, sporty trying on",
+    
+    # Tight shorts & leggings - library/study
+    "photo of a young woman age 19, sitting at desk, crop sweater and tight yoga pants, library study area, comfy study athletic",
+    "photo of a young woman age 18, standing by bookshelf, fitted tee and skin-tight leggings, library interior, casual study wear",
+    "photo of a teen woman age 20, reading at table, sports crop top and bike shorts, study lounge, focused athletic vibe",
+    "photo of a young woman age 19, walking between shelves, tank top and high-waisted leggings, modern library, studious athletic",
+    
+    # Athletic wear - rooftop/balcony
+    "photo of a young woman age 18, standing on rooftop, sports bra and tight shorts, city skyline background, golden hour workout",
+    "photo of a teen woman age 20, sitting on balcony railing, crop top and skin-tight yoga pants, apartment balcony, sunset athletic",
+    "photo of a young woman age 19, leaning on edge, fitted tank and compression leggings, rooftop terrace, evening workout vibe",
+    "photo of a young woman age 18, stretching with view, sports bra and tight bike shorts, balcony overlooking city, fitness aesthetic",
+    
+    # Tight bottoms - restaurant/dining
+    "photo of a teen woman age 20, sitting at restaurant table, crop top and high-waisted tight jeans, trendy restaurant, casual dinner date",
+    "photo of a young woman age 19, standing by bar, fitted tank and skin-tight leggings, restaurant interior, athletic dining out",
+    "photo of a young woman age 18, sitting in booth, sports crop top and tight shorts, diner setting, sporty casual meal",
+    "photo of a teen woman age 20, at outdoor dining, fitted top and spandex bike shorts, patio restaurant, athletic brunch style",
+    
+    # Swimwear & tight athletic wear - pool/resort
+    "photo of a young woman age 19, sitting poolside, sports bikini and tight athletic shorts, hotel pool area, vacation workout mode",
+    "photo of a young woman age 18, standing by pool, crop swimsuit top and spandex bike shorts, resort pool, athletic summer getaway",
+    "photo of a teen woman age 20, lying on lounge chair, sports bikini and high-waisted leggings, poolside, relaxed athletic vacation",
+    "photo of a young woman age 19, walking around pool, swim crop top and tight yoga shorts, resort setting, tropical athletic vibes",
 ]
 
 # Enhanced negative prompt
-NEGATIVE_PROMPT = "child, childish, young child, kid, minor, underage, baby face, deformed, distorted, disfigured, bad anatomy, wrong anatomy, extra limbs, extra arms, missing arms, fused fingers, mutated hands, poorly drawn hands, poorly drawn face, mutation, ugly, bad proportions, malformed limbs, blurry, low quality, watermark, text, duplicate, clone, baggy clothes, oversized unfitted"
+NEGATIVE_PROMPT = "child, childish, young child, kid, minor, underage, baby face, deformed, distorted, disfigured, bad anatomy, wrong anatomy, extra limbs, extra arms, missing arms, fused fingers, mutated hands, poorly drawn hands, poorly drawn face, mutation, ugly, bad proportions, malformed limbs, blurry, low quality, watermark, text, duplicate, clone, baggy clothes, oversized unfitted, loose clothing"
 
 log("Generating HIGH RESOLUTION stylish image with FAL (Square HD 1024x1024, 35 steps)...")
 prompt = random.choice(PROMPTS)
