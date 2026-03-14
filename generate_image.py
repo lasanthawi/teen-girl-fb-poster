@@ -78,6 +78,7 @@ NEGATIVE_PROMPT = "child, childish, young child, kid, minor, underage, baby face
 log("Generating HIGH RESOLUTION stylish image with FAL (Square HD 1024x1024, 35 steps)...")
 prompt = random.choice(PROMPTS)
 log(f"Prompt: {prompt}")
+log(f"RUBE_IMAGE_PROMPT_START:{prompt}:RUBE_IMAGE_PROMPT_END")  # Special marker for recipe
 log(f"Negative prompt: {NEGATIVE_PROMPT[:100]}...")
 
 fal_key = os.environ.get("FAL_API_KEY").strip()
