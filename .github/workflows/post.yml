@@ -29,6 +29,13 @@ jobs:
           LORA_MODEL_URL: ${{ secrets.LORA_MODEL_URL }}
         run: python generate_image.py
 
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-image
+          path: image_url.txt
+          retention-days: 1
+
       - name: Display image URL
         run: |
           echo "=================================================="
