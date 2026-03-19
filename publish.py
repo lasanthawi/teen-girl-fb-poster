@@ -6,9 +6,15 @@ from datetime import datetime
 def log(msg):
     print(f"[{datetime.utcnow().isoformat()}] {msg}")
 
-# Read image URL from file
+# Read image URL and optional caption
 with open("image_url.txt", "r") as f:
     image_url = f.read().strip()
+
+caption = ""
+if os.path.isfile("caption.txt"):
+    with open("caption.txt", "r", encoding="utf-8") as f:
+        caption = f.read().strip()
+    log(f"Caption: {caption}")
 
 log(f"Publishing image: {image_url}")
 
@@ -17,21 +23,23 @@ webhook_url = os.environ.get("WEBHOOK_URL")
 webhook_secret = os.environ.get("WEBHOOK_SECRET")
 
 if not webhook_url or not webhook_secret:
-    log("⚠️  WEBHOOK_URL or WEBHOOK_SECRET not set")
-    log("Falling back to direct Rube execution (manual trigger needed)")
-    log(f"Image URL for manual publishing: {image_url}")
-    # Exit successfully so workflow doesn't fail, but note manual action needed
-    sys.exit(0)
+    log("✗ WEBHOOK_URL or WEBHOOK_SECRET not set in GitHub Actions secrets")
+    log("Add WEBHOOK_URL (e.g. https://your-app.vercel.app/api/webhook) and WEBHOOK_SECRET")
+    sys.exit(1)
 
 log(f"Calling Vercel webhook: {webhook_url}")
 
 try:
+    payload = {
+        "image_url": image_url,
+        "secret": webhook_secret,
+    }
+    if caption:
+        payload["caption"] = caption
+
     resp = requests.post(
         webhook_url,
-        json={
-            "image_url": image_url,
-            "secret": webhook_secret
-        },
+        json=payload,
         timeout=120
     )
     

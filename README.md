@@ -1,21 +1,21 @@
 # Teen Girl FB Auto-Poster - Full Automation with Webhook
 
-**Fully automated Facebook posting using GitHub + Vercel + Composio**
+**Fully automated Facebook posting: GitHub Actions → Vercel webhook → Facebook Graph API**
 
-##  Architecture
+## Architecture
 
 ```
-GitHub Actions (Scheduled 2x daily)
+GitHub Actions (scheduled or manual)
   ↓
-1. Generate image with FAL + Lora (scale 1.8, square)
+1. Generate image with FAL + LoRA (square HD, 35 steps)
   ↓
-2. POST to Vercel Webhook with image URL
+2. Generate caption (OpenAI if key set, else template)
   ↓
-3. Webhook triggers Composio Recipe
+3. POST to Vercel webhook: image_url + caption
   ↓
-4. Recipe: Fetch context → Generate caption → Post to FB
+4. Webhook posts directly to Facebook Page via Graph API (token + page ID from Vercel env)
   ↓
-5. ✅ Post live on Nethmi G page
+5. ✅ Post live on page
 ```
 
 ---
@@ -48,12 +48,11 @@ GitHub Actions (Scheduled 2x daily)
    You'll get a URL like: `https://teen-girl-fb-webhook-xxx.vercel.app`
 
 5. **Add Environment Variables in Vercel Dashboard:**
-   - Go to your Vercel project settings
-   - Add these environment variables:
-     - `COMPOSIO_TOKEN`: Your JWT token (eyJhbGciOiJIUzI1NiJ9...)
-     - `WEBHOOK_SECRET`: Generate a random string (e.g., `wh_secret_12345abc`)
-     - `RECIPE_ID`: `rcp_A9M-wR3IZxUp`
-     - `FACEBOOK_PAGE_ID`: `1025914070602506`
+   - Go to your Vercel project settings → Environment Variables
+   - Add:
+     - `WEBHOOK_SECRET`: A random string (e.g. `wh_secret_xxxx`) — **same value** as in GitHub Secrets
+     - `FACEBOOK_PAGE_ID`: Your Facebook Page ID (numeric, e.g. `1025914070602506`)
+     - `FACEBOOK_ACCESS_TOKEN`: A **Page access token** with `pages_manage_posts` (and optionally `pages_read_engagement`) for that page. Use a long-lived token so it doesn’t expire quickly.
 
 ---
 
@@ -61,17 +60,15 @@ GitHub Actions (Scheduled 2x daily)
 
 Go to [GitHub Secrets](https://github.com/lasanthawi/teen-girl-fb-poster/settings/secrets/actions)
 
-Add these 2 NEW secrets:
+Add these secrets:
 
 | Secret Name | Value |
 |------------|-------|
 | `WEBHOOK_URL` | `https://YOUR-VERCEL-URL.vercel.app/api/webhook` |
-| `WEBHOOK_SECRET` | Same value you used in Vercel |
-
-**Existing secrets** (should already be there):
-- ✅ `FAL_API_KEY`
-- ✅ `LORA_MODEL_URL`
-- ✅ `COMPOSIO_TOKEN`
+| `WEBHOOK_SECRET` | Same value you set in Vercel |
+| `FAL_API_KEY` | FAL API key |
+| `LORA_MODEL_URL` | Your LoRA model URL |
+| `OPENAI_API_KEY` | (Optional) For AI-generated captions; omit to use template captions |
 
 ---
 
@@ -84,11 +81,9 @@ Add these 2 NEW secrets:
 
 ---
 
-## ⏰ Automatic Schedule
+## ⏰ Schedule
 
-**Runs automatically 2x daily:**
-- **2:30 PM Sri Lanka Time** (9:00 AM UTC)
-- **7:30 PM Sri Lanka Time** (2:00 PM UTC)
+**Runs every 3 hours** (cron: `0 */3 * * *`). You can also trigger manually via **Actions → Run workflow**.
 
 ---
 
@@ -103,15 +98,12 @@ Add these 2 NEW secrets:
 
 ## 📊 Complete Flow
 
-1. **GitHub Actions triggers** (scheduled)
-2. **FAL generates** square image with Lora 1.8
-3. **GitHub calls** Vercel webhook with image URL
-4. **Webhook triggers** Composio recipe
-5. **Recipe:**
-   - Fetches recent posts for context
-   - Generates teen-voice caption with LLM
-   - Posts to Nethmi G Facebook page
-6. **Done!** Post is live
+1. **GitHub Actions** runs (schedule or manual).
+2. **Generate image** — FAL (flux-lora + your LoRA) produces an image; URL is saved.
+3. **Generate caption** — OpenAI if `OPENAI_API_KEY` is set, otherwise a random template caption.
+4. **Publish** — `publish.py` sends `image_url` and `caption` to your Vercel webhook.
+5. **Webhook** — Validates secret, then POSTs to Facebook Graph API `/{page-id}/photos` with the image URL and caption using `FACEBOOK_ACCESS_TOKEN` and `FACEBOOK_PAGE_ID` from Vercel env.
+6. **Done!** Post is live on your page.
 
 ---
 
@@ -119,11 +111,13 @@ Add these 2 NEW secrets:
 
 ### Image generation works but webhook fails
 - Check `WEBHOOK_URL` and `WEBHOOK_SECRET` match in GitHub and Vercel
-- Check Vercel logs for errors
+- Check Vercel function logs for the exact error
 
-### Recipe execution fails
-- Check `COMPOSIO_TOKEN` is valid in Vercel
-- Verify Facebook connection is active in Composio
+### Facebook post fails (401, 403, or error from Graph API)
+- Ensure `FACEBOOK_ACCESS_TOKEN` is a **Page access token** (not a User access token). Get it from [Graph API Explorer](https://developers.facebook.com/tools/explorer/) → select your app → Page → “Get Page Access Token”, or via your app’s login flow.
+- Ensure the token has `pages_manage_posts` permission.
+- Use a long-lived Page token so it doesn’t expire in 1–2 hours.
+- Ensure `FACEBOOK_PAGE_ID` is the numeric Page ID (not the username).
 
 ---
 
@@ -131,8 +125,7 @@ Add these 2 NEW secrets:
 
 - **GitHub Repo:** https://github.com/lasanthawi/teen-girl-fb-poster
 - **GitHub Actions:** https://github.com/lasanthawi/teen-girl-fb-poster/actions
-- **Composio Recipe:** https://rube.app/recipe-hub/publish-fb-post-with-image
-- **Nethmi G Page:** https://www.facebook.com/profile.php?id=61585808243069
+- **Facebook Graph API – Page Photos:** https://developers.facebook.com/docs/graph-api/reference/page/photos/
 
 ---
 

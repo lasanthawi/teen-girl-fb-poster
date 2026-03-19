@@ -1,4 +1,4 @@
-name: Generate Teen Girl Image
+name: Generate and Publish to Facebook
 
 on:
   schedule:
@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  generate-image:
+  generate-and-publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v3
 
@@ -22,29 +22,27 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-      
+
       - name: Generate image with FAL
         env:
           FAL_API_KEY: ${{ secrets.FAL_API_KEY }}
           LORA_MODEL_URL: ${{ secrets.LORA_MODEL_URL }}
         run: python generate_image.py
 
-      - name: Upload image artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: generated-image
-          path: image_url.txt
-          retention-days: 1
+      - name: Generate caption
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: python generate_caption.py
 
-      - name: Display image URL
+      - name: Publish to Facebook via webhook
+        env:
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+          WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+        run: python publish.py
+
+      - name: Summary
         run: |
           echo "=================================================="
-          echo "IMAGE GENERATED SUCCESSFULLY"
-          echo "=================================================="
-          echo "Image URL:"
-          cat image_url.txt
-          echo ""
-          echo "Rube will automatically detect and publish this image"
-          echo "=================================================="
-          echo "Rube will automatically publish this image"
+          echo "Image URL: $(cat image_url.txt)"
+          echo "Caption: $(cat caption.txt)"
           echo "=================================================="
