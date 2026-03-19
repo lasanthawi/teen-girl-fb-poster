@@ -45,7 +45,7 @@ GitHub Actions (scheduled or manual)
    vercel --prod
    ```
    
-   You'll get a URL like: `https://teen-girl-fb-webhook-xxx.vercel.app`
+   Deployed URL: **https://teen-girl-fb-poster.vercel.app**
 
 5. **Add Environment Variables in Vercel Dashboard:**
    - Go to your Vercel project settings → Environment Variables
@@ -64,7 +64,7 @@ Add these secrets:
 
 | Secret Name | Value |
 |------------|-------|
-| `WEBHOOK_URL` | `https://YOUR-VERCEL-URL.vercel.app/api/webhook` |
+| `WEBHOOK_URL` | `https://teen-girl-fb-poster.vercel.app/api/webhook` |
 | `WEBHOOK_SECRET` | Same value you set in Vercel |
 | `FAL_API_KEY` | FAL API key |
 | `LORA_MODEL_URL` | Your LoRA model URL |
@@ -113,7 +113,7 @@ Add these secrets:
 - Check `WEBHOOK_URL` and `WEBHOOK_SECRET` match in GitHub and Vercel
 - Check Vercel function logs for the exact error
 
-### Facebook post fails (401, 403, or error from Graph API)
+### Facebook post fails (401, 403, or "publish_actions deprecated")
 - Ensure `FACEBOOK_ACCESS_TOKEN` is a **Page access token** (not a User access token). Get it from [Graph API Explorer](https://developers.facebook.com/tools/explorer/) → select your app → Page → “Get Page Access Token”, or via your app’s login flow.
 - Ensure the token has `pages_manage_posts` permission.
 - Use a long-lived Page token so it doesn’t expire in 1–2 hours.

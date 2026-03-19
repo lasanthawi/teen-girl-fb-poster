@@ -81,6 +81,10 @@ log(f"Prompt: {prompt}")
 log(f"RUBE_IMAGE_PROMPT_START:{prompt}:RUBE_IMAGE_PROMPT_END")  # Special marker for recipe
 log(f"Negative prompt: {NEGATIVE_PROMPT[:100]}...")
 
+# Save prompt for caption generator (scene-specific captions)
+with open("image_prompt.txt", "w", encoding="utf-8") as f:
+    f.write(prompt)
+
 fal_key = os.environ.get("FAL_API_KEY").strip()
 lora_url = os.environ.get("LORA_MODEL_URL").strip()
 
