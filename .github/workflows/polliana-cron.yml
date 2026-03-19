@@ -1,0 +1,24 @@
+name: Polliana Cron
+
+on:
+  schedule:
+    - cron: '0 */3 * * *'  # Every 3 hours UTC
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  trigger-recipe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Execute Polliana Recipe
+        run: |
+          curl -X POST https://backend.composio.dev/api/v3/recipe/rcp_gb_wyvPzsA1D/execute?user_id=user_01KHDVFZZKZCVX58BRMA05ZJKZ \
+            -H "Authorization: Bearer ${{ secrets.COMPOSIO_API_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"input_data": {}}' \
+            --max-time 600
+
+      - name: Log Status
+        if: always()
+        run: echo "Polliana recipe execution completed at $(date -u)"
